@@ -53,7 +53,7 @@ end
 function M.get_server_info()
     local buf = vim.api.nvim_buf_get_name(0)
     return {
-        cwd = vim.fn.fnamemodify(vim.fn.getcwd(), ':~'),
+        cwd = vim.fn.fnamemodify(vim.fn.getcwd(-1, -1), ':~'),
         file = buf ~= '' and vim.fn.fnamemodify(buf, ':~:.') or '[No Name]',
         uis = #vim.api.nvim_list_uis(),
     }
