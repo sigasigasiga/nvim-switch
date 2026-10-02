@@ -19,6 +19,6 @@ vim.pack.add {
 vim.api.nvim_create_user_command(
     'Switch',
     function(args) switch.pick(args.bang) end,
-    { bang = true, desc = 'Switch UI to another Nvim server (! stops current server if unused)' },
+    { bang = true, desc = 'Switch UI to another Nvim server (! stops current server if unused)' }
 )
 ```
