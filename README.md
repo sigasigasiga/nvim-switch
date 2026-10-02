@@ -9,7 +9,16 @@ crashed instances are pruned automatically).
 
 ## Usage
 
-- `:Switch`  – pick another instance and `:connect` to it
-- `:Switch!` – same, but uses `:connect!` (stops the current server if no other UI is attached)
-
 Lua API: `require('switch').list()`, `require('switch').pick(bang)`.
+
+```lua
+vim.pack.add {
+    'https://github.com/sigasigasiga/nvim-switch',
+}
+
+vim.api.nvim_create_user_command(
+    'Switch',
+    function(args) switch.pick(args.bang) end,
+    { bang = true, desc = 'Switch UI to another Nvim server (! stops current server if unused)' },
+)
+```
