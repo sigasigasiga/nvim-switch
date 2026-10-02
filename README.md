@@ -21,4 +21,10 @@ vim.api.nvim_create_user_command(
     function(args) require 'switch'.pick(args.bang) end,
     { bang = true, desc = 'Switch UI to another Nvim server (! stops current server if unused)' }
 )
+
+vim.api.nvim_create_user_command(
+    'SetInstanceName',
+    function(args) require 'switch'.instance_name = args end,
+    { nargs = 1, desc = 'Set the current Nvim server instance name' }
+)
 ```

@@ -36,6 +36,8 @@ local function query(addr)
     return ok2 and info or nil
 end
 
+M.instance_name = vim.fn.getcwd(-1, -1)
+
 function M.register()
     if vim.v.servername == '' then
         vim.fn.serverstart()
@@ -54,12 +56,13 @@ function M.get_server_info()
     local buf = vim.api.nvim_buf_get_name(0)
     return {
         cwd = vim.fn.fnamemodify(vim.fn.getcwd(-1, -1), ':~'),
+        instance_name = M.instance_name,
         file = buf ~= '' and vim.fn.fnamemodify(buf, ':~:.') or '[No Name]',
         uis = #vim.api.nvim_list_uis(),
     }
 end
 
---- @return {pid: integer, addr: string, cwd: string, file: string, uis: integer}[]
+--- @return {pid: integer, addr: string, cwd: string, instance_name: string, file: string, uis: integer}[]
 function M.list()
     local res = {}
     for name, type in vim.fs.dir(dir) do
@@ -95,7 +98,7 @@ function M.pick(bang)
             prompt = 'Switch to:',
             format_item = function(i)
                 local ui_str = i.uis > 0 and ('  [%d UI]'):format(i.uis) or ''
-                return ('%-8d %s  %s%s'):format(i.pid, i.cwd, i.file, ui_str)
+                return ('%-8d %s %s  %s%s'):format(i.pid, i.instance_name, i.cwd, i.file, ui_str)
             end,
         },
         function(choice)
