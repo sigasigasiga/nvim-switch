@@ -85,7 +85,7 @@ function M.list()
 end
 
 --- @param bang boolean? stop the current server if no other UI is attached
-function M.pick(bang)
+function M.default_picker(bang)
     local items = M.list()
     if #items == 0 then
         vim.notify('switch: no other instances found', vim.log.levels.WARN)
@@ -107,6 +107,11 @@ function M.pick(bang)
             end
         end
     )
+end
+
+--- @param bang boolean? stop the current server if no other UI is attached
+function M.pick(bang)
+    return M.default_picker(bang)
 end
 
 return M
