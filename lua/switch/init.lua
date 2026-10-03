@@ -98,7 +98,7 @@ function M.pick(bang)
             prompt = 'Switch to:',
             format_item = function(i)
                 local ui_str = i.uis > 0 and ('  [%d UI]'):format(i.uis) or ''
-                return ('%-8d %s %s  %s%s'):format(i.pid, i.instance_name, i.cwd, i.file, ui_str)
+                return ('%-8d %-16s %-16s  %s%s'):format(i.pid, i.instance_name, i.cwd, i.file, ui_str)
             end,
         },
         function(choice)
