@@ -1,4 +1,4 @@
-local registry = require 'registry'
+local registry = require 'switch.registry'
 
 local function builtin_picker(items, bang)
     assert(#items ~= 0)
