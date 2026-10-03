@@ -10,6 +10,7 @@ crashed instances are pruned automatically).
 ## Usage
 
 ```lua
+-- Using `vim.pack` is not necessary, you can use whatever plugin manager you like
 vim.pack.add {
     'https://github.com/sigasigasiga/nvim-switch',
 }
