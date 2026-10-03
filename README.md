@@ -7,10 +7,9 @@ Every instance running this plugin registers its server address under
 `stdpath('state')/switch/<pid>` and removes it on exit (stale entries from
 crashed instances are pruned automatically).
 
-## Usage
+## Example config
 
 ```lua
--- Using `vim.pack` is not necessary, you can use whatever plugin manager you like
 vim.pack.add {
     'https://github.com/sigasigasiga/nvim-switch',
 }

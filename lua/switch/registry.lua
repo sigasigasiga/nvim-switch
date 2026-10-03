@@ -34,6 +34,7 @@ local function query_server(addr)
     return ok2 and info or nil
 end
 
+-- INTERFACE -------------------------------------------------------------------
 
 local M = {}
 
@@ -57,8 +58,10 @@ function M.list()
         local p = tonumber(name)
         if type == 'file' and p and p ~= pid then
             local path = make_entry_path(p)
+            -- Yes, that's a TOCTOU. Is it really a problem? I don't think so
             local addr = is_alive(p) and (vim.fn.readfile(path)[1] or '') or ''
             local info = addr ~= '' and query_server(addr)
+
             if info then
                 table.insert(res, vim.tbl_extend('force', info, { pid = p, addr = addr }))
             else
