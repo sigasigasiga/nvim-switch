@@ -36,7 +36,7 @@ local function query(addr)
     return ok2 and info or nil
 end
 
-M.instance_name = vim.fn.fnamemodify(vim.fn.getcwd(-1, -1), ':h')
+M.instance_name = vim.fn.fnamemodify(vim.fn.getcwd(-1, -1), ':t')
 
 function M.register()
     if vim.v.servername == '' then
