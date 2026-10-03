@@ -1,5 +1,3 @@
-local M = {}
-
 local dir = vim.fs.joinpath(vim.fn.stdpath('state'), 'switch')
 local pid = vim.fn.getpid()
 
@@ -11,10 +9,10 @@ local function is_alive(p)
     return vim.uv.kill(p, 0) == 0
 end
 
-local function query(addr)
+local function query_server(addr)
     local ok, chan = pcall(
         vim.fn.sockconnect,
-        addr:match('^[^/\\]+:%d+$') and 'tcp' or 'pipe',
+        addr:match([[^[^/\]+:%d+$]]) and 'tcp' or 'pipe',
         addr,
         { rpc = true }
     )
@@ -27,7 +25,7 @@ local function query(addr)
         vim.rpcrequest,
         chan,
         'nvim_exec_lua',
-        'return require("switch").get_server_info()',
+        [[return require 'switch'.get_server_info()]],
         {}
     )
 
@@ -36,7 +34,7 @@ local function query(addr)
     return ok2 and info or nil
 end
 
-local function default_picker(items, bang)
+local function builtin_picker(items, bang)
     assert(#items ~= 0)
 
     vim.ui.select(
@@ -127,8 +125,11 @@ end
 
 -- INTERFACE -------------------------------------------------------------------
 
+local M = {}
+
 M.instance_name = vim.fn.fnamemodify(vim.fn.getcwd(-1, -1), ':t')
 
+-- TODO: this is an implementation detail and must be ommitted from the public api
 function M.register()
     if vim.v.servername == '' then
         vim.fn.serverstart()
@@ -161,23 +162,25 @@ function M.list()
         if type == 'file' and p and p ~= pid then
             local path = make_entry_path(p)
             local addr = is_alive(p) and (vim.fn.readfile(path)[1] or '') or ''
-            local info = addr ~= '' and query(addr)
+            local info = addr ~= '' and query_server(addr)
             if info then
-                res[#res + 1] = vim.tbl_extend('force', info, { pid = p, addr = addr })
+                table.insert(res, vim.tbl_extend('force', info, { pid = p, addr = addr }))
             else
                 vim.uv.fs_unlink(path)
             end
         end
     end
+
     table.sort(res, function(a, b)
         return a.pid < b.pid
     end)
+
     return res
 end
 
 --- @param bang boolean? stop the current server if no other UI is attached
-function M.default_picker(bang)
-    with_picker(default_picker, M.list(), bang)
+function M.builtin_picker(bang)
+    with_picker(builtin_picker, M.list(), bang)
 end
 
 --- @param bang boolean? stop the current server if no other UI is attached
@@ -187,7 +190,7 @@ end
 
 --- @param bang boolean? stop the current server if no other UI is attached
 function M.pick(bang)
-    local picker = vim.g.loaded_telescope == 1 and telescope_picker or default_picker
+    local picker = vim.g.loaded_telescope == 1 and telescope_picker or builtin_picker
     with_picker(picker, M.list(), bang)
 end
 
