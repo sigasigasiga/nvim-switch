@@ -95,7 +95,7 @@ function M.pick(bang)
     vim.ui.select(
         items,
         {
-            prompt = ('Switch to:\n%-8s %-16s %-16s %-24s %-8s'):format('PID', 'Name', 'CWD', 'Open file', 'UI'),
+            prompt = ('Switch to:\n%8s %16s %16s %24s %8s'):format('PID', 'Name', 'CWD', 'Open file', 'UI'),
             format_item = function(i)
                 local ui_str = i.uis > 0 and ('  [%d UI]'):format(i.uis) or ''
                 return ('%-8d %-16s %-16s  %s%s'):format(i.pid, i.instance_name, i.cwd, i.file, ui_str)
