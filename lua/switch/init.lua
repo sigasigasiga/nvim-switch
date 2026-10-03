@@ -36,61 +36,8 @@ local function query(addr)
     return ok2 and info or nil
 end
 
-M.instance_name = vim.fn.fnamemodify(vim.fn.getcwd(-1, -1), ':t')
-
-function M.register()
-    if vim.v.servername == '' then
-        vim.fn.serverstart()
-    end
-
-    vim.fn.mkdir(dir, 'p')
-    vim.fn.writefile({ vim.v.servername }, make_entry_path(pid))
-end
-
-function M.unregister()
-    vim.uv.fs_unlink(make_entry_path(pid))
-end
-
--- Called remotely by peers to describe this instance.
-function M.get_server_info()
-    local buf = vim.api.nvim_buf_get_name(0)
-    return {
-        cwd = vim.fn.fnamemodify(vim.fn.getcwd(-1, -1), ':~'),
-        instance_name = M.instance_name,
-        file = buf ~= '' and vim.fn.fnamemodify(buf, ':~:.') or '[No Name]',
-        uis = #vim.api.nvim_list_uis(),
-    }
-end
-
---- @return {pid: integer, addr: string, cwd: string, instance_name: string, file: string, uis: integer}[]
-function M.list()
-    local res = {}
-    for name, type in vim.fs.dir(dir) do
-        local p = tonumber(name)
-        if type == 'file' and p and p ~= pid then
-            local path = make_entry_path(p)
-            local addr = is_alive(p) and (vim.fn.readfile(path)[1] or '') or ''
-            local info = addr ~= '' and query(addr)
-            if info then
-                res[#res + 1] = vim.tbl_extend('force', info, { pid = p, addr = addr })
-            else
-                vim.uv.fs_unlink(path)
-            end
-        end
-    end
-    table.sort(res, function(a, b)
-        return a.pid < b.pid
-    end)
-    return res
-end
-
---- @param bang boolean? stop the current server if no other UI is attached
-function M.default_picker(bang)
-    local items = M.list()
-    if #items == 0 then
-        vim.notify('switch: no other instances found', vim.log.levels.WARN)
-        return
-    end
+local function default_picker(items, bang)
+    assert(#items ~= 0)
 
     vim.ui.select(
         items,
@@ -109,14 +56,8 @@ function M.default_picker(bang)
     )
 end
 
---- @param bang boolean? stop the current server if no other UI is attached
-function M.telescope_picker(bang)
-    -- TODO: remove code duplication
-    local items = M.list()
-    if #items == 0 then
-        vim.notify('switch: no other instances found', vim.log.levels.WARN)
-        return
-    end
+local function telescope_picker(items, bang)
+    assert(#items ~= 0)
 
     local pickers = require 'telescope.pickers'
     local finders = require 'telescope.finders'
@@ -175,13 +116,79 @@ function M.telescope_picker(bang)
     picker:find()
 end
 
+local function with_picker(picker, items, bang)
+    if #items == 0 then
+        vim.notify('switch: no other instances found', vim.log.levels.WARN)
+        return
+    end
+
+    picker(items, bang)
+end
+
+-- INTERFACE -------------------------------------------------------------------
+
+M.instance_name = vim.fn.fnamemodify(vim.fn.getcwd(-1, -1), ':t')
+
+function M.register()
+    if vim.v.servername == '' then
+        vim.fn.serverstart()
+    end
+
+    vim.fn.mkdir(dir, 'p')
+    vim.fn.writefile({ vim.v.servername }, make_entry_path(pid))
+end
+
+function M.unregister()
+    vim.uv.fs_unlink(make_entry_path(pid))
+end
+
+-- Called remotely by peers to describe this instance.
+function M.get_server_info()
+    local buf = vim.api.nvim_buf_get_name(0)
+    return {
+        cwd = vim.fn.fnamemodify(vim.fn.getcwd(-1, -1), ':~'),
+        instance_name = M.instance_name,
+        file = buf ~= '' and vim.fn.fnamemodify(buf, ':~:.') or '[No Name]',
+        uis = #vim.api.nvim_list_uis(),
+    }
+end
+
+--- @return {pid: integer, addr: string, cwd: string, instance_name: string, file: string, uis: integer}[]
+function M.list()
+    local res = {}
+    for name, type in vim.fs.dir(dir) do
+        local p = tonumber(name)
+        if type == 'file' and p and p ~= pid then
+            local path = make_entry_path(p)
+            local addr = is_alive(p) and (vim.fn.readfile(path)[1] or '') or ''
+            local info = addr ~= '' and query(addr)
+            if info then
+                res[#res + 1] = vim.tbl_extend('force', info, { pid = p, addr = addr })
+            else
+                vim.uv.fs_unlink(path)
+            end
+        end
+    end
+    table.sort(res, function(a, b)
+        return a.pid < b.pid
+    end)
+    return res
+end
+
+--- @param bang boolean? stop the current server if no other UI is attached
+function M.default_picker(bang)
+    with_picker(default_picker, M.list(), bang)
+end
+
+--- @param bang boolean? stop the current server if no other UI is attached
+function M.telescope_picker(bang)
+    with_picker(telescope_picker, M.list(), bang)
+end
+
 --- @param bang boolean? stop the current server if no other UI is attached
 function M.pick(bang)
-    if vim.g.loaded_telescope == 1 then
-        return M.telescope_picker(bang)
-    else
-        return M.default_picker(bang)
-    end
+    local picker = vim.g.loaded_telescope == 1 and telescope_picker or default_picker
+    with_picker(picker, M.list(), bang)
 end
 
 return M
