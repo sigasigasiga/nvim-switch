@@ -110,8 +110,79 @@ function M.default_picker(bang)
 end
 
 --- @param bang boolean? stop the current server if no other UI is attached
+function M.telescope_picker(bang)
+    -- TODO: remove code duplication
+    local items = M.list()
+    if #items == 0 then
+        vim.notify('switch: no other instances found', vim.log.levels.WARN)
+        return
+    end
+
+    local pickers = require 'telescope.pickers'
+    local finders = require 'telescope.finders'
+    local conf = require 'telescope.config'.values
+    local actions = require 'telescope.actions'
+    local action_state = require 'telescope.actions.state'
+    local entry_display = require 'telescope.pickers.entry_display'
+
+    local displayer = entry_display.create {
+        separator = ' ',
+        items = {
+            { width = 8, right_justify = true },
+            { width = 16, right_justify = true },
+            { width = 32, right_justify = true },
+            { width = 24, right_justify = true },
+            { width = 8, right_justify = true },
+        },
+    }
+
+    local picker = pickers.new(
+        {},
+        {
+            prompt_title = 'Switch to',
+            results_title = ('%8s %16s %32s %24s %8s'):format('PID', 'Name', 'CWD', 'Open file', 'UI'),
+            finder = finders.new_table {
+                results = items,
+                entry_maker = function(i)
+                    return {
+                        value = i,
+                        ordinal = ('%d %s %s %s'):format(i.pid, i.instance_name, i.cwd, i.file),
+                        display = function()
+                            return displayer {
+                                { tostring(i.pid), 'TelescopeResultsNumber' },
+                                i.instance_name,
+                                i.cwd,
+                                i.file,
+                                i.uis > 0 and ('[%d UI]'):format(i.uis) or '',
+                            }
+                        end,
+                    }
+                end,
+            },
+            sorter = conf.generic_sorter {},
+            attach_mappings = function(prompt_bufnr)
+                actions.select_default:replace(function()
+                    local entry = action_state.get_selected_entry()
+                    actions.close(prompt_bufnr)
+                    if entry then
+                        vim.cmd.connect { entry.value.addr, bang = bang }
+                    end
+                end)
+                return true
+            end,
+        }
+    )
+
+    picker:find()
+end
+
+--- @param bang boolean? stop the current server if no other UI is attached
 function M.pick(bang)
-    return M.default_picker(bang)
+    if vim.g.loaded_telescope == 1 then
+        return M.telescope_picker(bang)
+    else
+        return M.default_picker(bang)
+    end
 end
 
 return M
