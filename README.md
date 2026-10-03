@@ -1,7 +1,7 @@
 # nvim-switch
 
-Switch your UI between running Nvim server instances with `:connect`.
-Requires Nvim 0.12+, no dependencies.
+Switch your UI between running Neovim server instances with `:connect`.
+Requires Neovim 0.12+, no dependencies.
 
 Every instance running this plugin registers its server address under
 `stdpath('state')/switch/<pid>` and removes it on exit (stale entries from
@@ -9,22 +9,22 @@ crashed instances are pruned automatically).
 
 ## Usage
 
-Lua API: `require('switch').list()`, `require('switch').pick(bang)`.
-
 ```lua
 vim.pack.add {
     'https://github.com/sigasigasiga/nvim-switch',
 }
 
+local switch = require 'switch'
+
 vim.api.nvim_create_user_command(
     'Switch',
-    function(args) require 'switch'.pick(args.bang) end,
-    { bang = true, desc = 'Switch UI to another Nvim server (! stops current server if unused)' }
+    function(args) switch.pick(args.bang) end,
+    { bang = true, desc = 'Switch UI to another Neovim server (! stops current server if unused)' }
 )
 
 vim.api.nvim_create_user_command(
     'SetInstanceName',
-    function(args) require 'switch'.instance_name = args.args end,
-    { nargs = 1, desc = 'Set the current Nvim server instance name' }
+    function(args) switch.instance_name = args.args end,
+    { nargs = 1, desc = 'Set the current Neovim server instance name' }
 )
 ```
