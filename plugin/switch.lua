@@ -4,11 +4,11 @@ end
 
 vim.g.loaded_switch = true
 
-local switch = require('switch')
-switch.register()
+local registry = require 'switch.registry'
 
-local group = vim.api.nvim_create_augroup('switch', {})
+registry.register()
+
 vim.api.nvim_create_autocmd('VimLeavePre', {
-    group = group,
-    callback = switch.unregister,
+    group = vim.api.nvim_create_augroup('sigasigasiga/switch', {}),
+    callback = registry.unregister,
 })
