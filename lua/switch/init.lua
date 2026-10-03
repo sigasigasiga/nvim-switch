@@ -140,7 +140,6 @@ function M.telescope_picker(bang)
         {},
         {
             prompt_title = 'Switch to',
-            results_title = ('%8s %16s %32s %24s %8s'):format('PID', 'Name', 'CWD', 'Open file', 'UI'),
             finder = finders.new_table {
                 results = items,
                 entry_maker = function(i)
