@@ -3,10 +3,6 @@
 Switch your UI between running Neovim server instances with `:connect`.
 Requires Neovim 0.12+, no dependencies.
 
-Every instance running this plugin registers its server address under
-`stdpath('state')/switch/<pid>` and removes it on exit (stale entries from
-crashed instances are pruned automatically).
-
 ## Example config
 
 ```lua
