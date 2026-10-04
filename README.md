@@ -28,3 +28,7 @@ vim.api.nvim_create_user_command(
     { nargs = 1, desc = 'Set the current Neovim server instance name' }
 )
 ```
+
+## Similar plugins
+
+* [servery.nvim](https://github.com/wurli/servery.nvim)
