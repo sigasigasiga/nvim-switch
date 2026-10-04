@@ -109,21 +109,20 @@ local function query_server(addr)
 
     pcall(vim.fn.chanclose, chan)
 
-    return ok2 and info or nil
+    if ok2 and info then
+        info.addr = addr
+        return info
+    end
 end
 
 local function server_list()
-    local ret = {}
+    local current_servers = vim.fn.serverlist()
 
-    local servers = vim.fn.serverlist{ peer = true }
-    for _, addr in ipairs(servers) do
-        local info = query_server(addr)
-        if info then
-            table.insert(ret, vim.tbl_extend('force', info, { addr = addr }))
-        end
-    end
-
-    return ret
+    return vim.iter(vim.fn.serverlist { peer = true })
+        -- yes, that's `M*N` but i don't expect `current_servers` to be big
+        :filter(function(v) return not vim.list_contains(current_servers, v) end)
+        :map(query_server)
+        :totable()
 end
 
 -- INTERFACE -------------------------------------------------------------------
