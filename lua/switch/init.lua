@@ -1,5 +1,3 @@
-local registry = require 'switch.registry'
-
 local function builtin_picker(items, bang)
     assert(#items ~= 0)
 
@@ -89,6 +87,45 @@ local function with_picker(picker, items, bang)
     picker(items, bang)
 end
 
+local function query_server(addr)
+    local ok, chan = pcall(
+        vim.fn.sockconnect,
+        addr:match([[^[^/\]+:%d+$]]) and 'tcp' or 'pipe',
+        addr,
+        { rpc = true }
+    )
+
+    if not ok or chan == 0 then
+        return nil
+    end
+
+    local ok2, info = pcall(
+        vim.rpcrequest,
+        chan,
+        'nvim_exec_lua',
+        [[return require 'switch'.get_server_info()]],
+        {}
+    )
+
+    pcall(vim.fn.chanclose, chan)
+
+    return ok2 and info or nil
+end
+
+local function server_list()
+    local ret = {}
+
+    local servers = vim.fn.serverlist{ peer = true }
+    for _, addr in ipairs(servers) do
+        local info = query_server(addr)
+        if info then
+            table.insert(ret, vim.tbl_extend('force', info, { addr = addr }))
+        end
+    end
+
+    return ret
+end
+
 -- INTERFACE -------------------------------------------------------------------
 
 local M = {}
@@ -99,6 +136,7 @@ M.instance_name = vim.fn.fnamemodify(vim.fn.getcwd(-1, -1), ':t')
 function M.get_server_info()
     local buf = vim.api.nvim_buf_get_name(0)
     return {
+        pid = vim.fn.getpid(),
         cwd = vim.fn.fnamemodify(vim.fn.getcwd(-1, -1), ':~'),
         instance_name = M.instance_name,
         file = buf ~= '' and vim.fn.fnamemodify(buf, ':~:.') or '[No Name]',
@@ -108,18 +146,18 @@ end
 
 --- @param bang boolean? stop the current server if no other UI is attached
 function M.builtin_picker(bang)
-    with_picker(builtin_picker, registry.list(), bang)
+    with_picker(builtin_picker, server_list(), bang)
 end
 
 --- @param bang boolean? stop the current server if no other UI is attached
 function M.telescope_picker(bang)
-    with_picker(telescope_picker, registry.list(), bang)
+    with_picker(telescope_picker, server_list(), bang)
 end
 
 --- @param bang boolean? stop the current server if no other UI is attached
 function M.pick(bang)
     local picker = vim.g.loaded_telescope == 1 and telescope_picker or builtin_picker
-    with_picker(picker, registry.list(), bang)
+    with_picker(picker, server_list(), bang)
 end
 
 return M
