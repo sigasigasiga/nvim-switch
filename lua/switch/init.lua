@@ -1,5 +1,7 @@
+local PROTOCOL_VERSION = 1
+
 local function builtin_picker(items, on_choice)
-    assert(#items ~= 0)
+    assert(#items > 0)
 
     vim.ui.select(
         items,
@@ -19,7 +21,7 @@ local function builtin_picker(items, on_choice)
 end
 
 local function telescope_picker(items, on_choice)
-    assert(#items ~= 0)
+    assert(#items > 0)
 
     local pickers = require 'telescope.pickers'
     local finders = require 'telescope.finders'
@@ -78,6 +80,11 @@ local function telescope_picker(items, on_choice)
     picker:find()
 end
 
+local function recent_picker(items, on_choice)
+    assert(#items > 0)
+    on_choice(items[1])
+end
+
 local function with_picker(picker, items, bang)
     if #items == 0 then
         vim.notify('switch: no other instances found', vim.log.levels.WARN)
@@ -115,7 +122,7 @@ local function query_server(addr)
 
     pcall(vim.fn.chanclose, chan)
 
-    if ok2 and info then
+    if ok2 and info and info.protocol_version == PROTOCOL_VERSION then
         info.addr = addr
         return info
     end
@@ -131,6 +138,13 @@ local function server_list()
         :totable()
 end
 
+local function now()
+    -- `CLOCK_MONOTONIC` is guaranteed to be system-wide by POSIX,
+    -- so the values are comparable between peers.
+    local t = vim.uv.clock_gettime('monotonic')
+    return t.sec + t.nsec / 1e9
+end
+
 -- it is expected that the plugin is loaded on startup
 local last_access = now()
 
@@ -139,12 +153,6 @@ local last_access = now()
 local M = {}
 
 M.instance_name = vim.fn.fnamemodify(vim.fn.getcwd(-1, -1), ':t')
-
--- CLOCK_MONOTONIC is system-wide, so the values are comparable between peers.
-local function now()
-    local t = vim.uv.clock_gettime('monotonic')
-    return t.sec + t.nsec / 1e9
-end
 
 vim.api.nvim_create_autocmd({ 'UIEnter', 'FocusGained' }, {
     group = vim.api.nvim_create_augroup('sigasigasiga/nvim-switch', { clear = true }),
@@ -155,6 +163,7 @@ vim.api.nvim_create_autocmd({ 'UIEnter', 'FocusGained' }, {
 function M.get_server_info()
     local buf = vim.api.nvim_buf_get_name(0)
     return {
+        protocol_version = PROTOCOL_VERSION, -- NB: bump this if the structure of the returned table changes
         pid = vim.fn.getpid(),
         cwd = vim.fn.fnamemodify(vim.fn.getcwd(-1, -1), ':~'),
         instance_name = M.instance_name,
@@ -178,6 +187,10 @@ end
 function M.pick(bang)
     local picker = vim.g.loaded_telescope == 1 and telescope_picker or builtin_picker
     with_picker(picker, server_list(), bang)
+end
+
+function M.pick_recent(bang)
+    with_picker(recent_picker, server_list(), bang)
 end
 
 return M
