@@ -1,4 +1,4 @@
-local function builtin_picker(items, bang)
+local function builtin_picker(items, on_choice)
     assert(#items ~= 0)
 
     vim.ui.select(
@@ -12,13 +12,13 @@ local function builtin_picker(items, bang)
         },
         function(choice)
             if choice then
-                vim.cmd.connect { choice.addr, bang = bang }
+                on_choice(choice)
             end
         end
     )
 end
 
-local function telescope_picker(items, bang)
+local function telescope_picker(items, on_choice)
     assert(#items ~= 0)
 
     local pickers = require 'telescope.pickers'
@@ -67,7 +67,7 @@ local function telescope_picker(items, bang)
                     local entry = action_state.get_selected_entry()
                     actions.close(prompt_bufnr)
                     if entry then
-                        vim.cmd.connect { entry.value.addr, bang = bang }
+                        on_choice(entry.value)
                     end
                 end)
                 return true
@@ -84,7 +84,9 @@ local function with_picker(picker, items, bang)
         return
     end
 
-    picker(items, bang)
+    picker(items, function(choice)
+        vim.cmd.connect { choice.addr, bang = bang }
+    end)
 end
 
 local function query_server(addr)
