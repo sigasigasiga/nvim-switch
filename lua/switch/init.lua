@@ -1,3 +1,5 @@
+assert(vim.g.loaded_switch)
+
 local PROTOCOL_VERSION = 1
 
 local function builtin_picker(items, on_choice)
@@ -138,38 +140,28 @@ local function server_list()
         :totable()
 end
 
-local function now()
-    -- `CLOCK_MONOTONIC` is guaranteed to be system-wide by POSIX,
-    -- so the values are comparable between peers.
-    local t = vim.uv.clock_gettime('monotonic')
-    return t.sec + t.nsec / 1e9
-end
-
--- it is expected that the plugin is loaded on startup
-local last_access = now()
-
 -- INTERFACE -------------------------------------------------------------------
 
 local M = {}
 
 M.instance_name = vim.fn.fnamemodify(vim.fn.getcwd(-1, -1), ':t')
 
-vim.api.nvim_create_autocmd({ 'UIEnter', 'FocusGained' }, {
-    group = vim.api.nvim_create_augroup('sigasigasiga/nvim-switch', { clear = true }),
-    callback = function() last_access = now() end,
-})
-
 -- Called remotely by peers to describe this instance.
 function M.get_server_info()
+    assert(
+        vim.g.switch_last_access ~= nil,
+        'switch_last_access not set; did you load the plugin?'
+    )
+
     local buf = vim.api.nvim_buf_get_name(0)
     return {
         protocol_version = PROTOCOL_VERSION, -- NB: bump this if the structure of the returned table changes
         pid = vim.fn.getpid(),
         cwd = vim.fn.fnamemodify(vim.fn.getcwd(-1, -1), ':~'),
         instance_name = M.instance_name,
-        file = buf ~= '' and vim.fn.fnamemodify(buf, ':~:.') or '[No Name]',
+        file = buf == '' and '[No Name]' or vim.fn.fnamemodify(buf, ':~:.'),
         uis = #vim.api.nvim_list_uis(),
-        last_access = last_access,
+        last_access = vim.g.switch_last_access, -- set by `plugin/switch.lua`
     }
 end
 
