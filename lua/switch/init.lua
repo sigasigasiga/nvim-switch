@@ -84,6 +84,10 @@ local function with_picker(picker, items, bang)
         return
     end
 
+    table.sort(items, function(a, b)
+        return a.last_access > b.last_access
+    end)
+
     picker(items, function(choice)
         vim.cmd.connect { choice.addr, bang = bang }
     end)
@@ -127,11 +131,25 @@ local function server_list()
         :totable()
 end
 
+-- it is expected that the plugin is loaded on startup
+local last_access = now()
+
 -- INTERFACE -------------------------------------------------------------------
 
 local M = {}
 
 M.instance_name = vim.fn.fnamemodify(vim.fn.getcwd(-1, -1), ':t')
+
+-- CLOCK_MONOTONIC is system-wide, so the values are comparable between peers.
+local function now()
+    local t = vim.uv.clock_gettime('monotonic')
+    return t.sec + t.nsec / 1e9
+end
+
+vim.api.nvim_create_autocmd({ 'UIEnter', 'FocusGained' }, {
+    group = vim.api.nvim_create_augroup('sigasigasiga/nvim-switch', { clear = true }),
+    callback = function() last_access = now() end,
+})
 
 -- Called remotely by peers to describe this instance.
 function M.get_server_info()
@@ -142,6 +160,7 @@ function M.get_server_info()
         instance_name = M.instance_name,
         file = buf ~= '' and vim.fn.fnamemodify(buf, ':~:.') or '[No Name]',
         uis = #vim.api.nvim_list_uis(),
+        last_access = last_access,
     }
 end
 
